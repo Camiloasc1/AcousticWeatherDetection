@@ -9,11 +9,11 @@ def test():
     length = 100.0
     n = fs * length
 
-    x = np.linspace(0.0, length, n)
-    y = np.sin(10.0 * 2.0 * np.pi * x)
-    y += 0.75 * np.sin(20.0 * 2.0 * np.pi * x)
-    y += 0.5 * np.sin(30.0 * 2.0 * np.pi * x)
-    y += 0.25 * np.sin(40.0 * 2.0 * np.pi * x)
+    x = np.linspace(0., length, n)
+    y = np.sin(10. * 2. * np.pi * x)
+    y += 0.75 * np.sin(20. * 2. * np.pi * x)
+    y += 0.5 * np.sin(30. * 2. * np.pi * x)
+    y += 0.25 * np.sin(40. * 2. * np.pi * x)
     xf, yf = fourier(y, fs)
 
     plt.subplot(2, 1, 1)
