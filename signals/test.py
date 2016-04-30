@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from signals.fourier import fourier
+from signals.analysis import ClimbingAgent
 
 
-def test():
+def test_fourier():
     fs = 100
     length = 100.0
     n = fs * length
@@ -23,5 +24,18 @@ def test():
     plt.show()
 
 
+def test_agent():
+    values = [1, 2, 3, 2, 1]
+    delta = 2
+    agent = ClimbingAgent(values, 4, delta, 1)
+    print([i for i in agent.range()])
+    print([i for i in agent.range(True)])
+    agent.climb()
+    print([i for i in agent.range()])
+    print([i for i in agent.range(True)])
+    print([i for i in range(delta, 15, delta * 2 + 1)])
+
+
 if __name__ == "__main__":
-    test()
+    # test_fourier()
+    test_agent()
