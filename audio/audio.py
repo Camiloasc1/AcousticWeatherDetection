@@ -7,7 +7,9 @@ def play(signal, rate):
         frames, channels = signal.shape
 
     signal = _buffer(signal)
-    audio = pyaudio.PyAudio()
+
+    with Nostderr():
+        audio = pyaudio.PyAudio()
     stream = audio.open(format=pyaudio.paFloat32,
                         channels=channels,
                         rate=rate,
@@ -26,8 +28,8 @@ def record(rate, length, channels=1, buffer_size=0):
 
     import pyaudio
 
-    audio = pyaudio.PyAudio()
-
+    with Nostderr():
+        audio = pyaudio.PyAudio()
     stream = audio.open(format=pyaudio.paFloat32,
                         channels=channels,
                         rate=rate,
@@ -83,3 +85,24 @@ def _array(buffer, channels):
     if channels > 1:
         array.shape = -1, channels
     return array
+
+
+class Nostderr():
+    def __init__(self):
+        self.old_stderr = None
+
+    def __enter__(self):
+        import sys
+        import os
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        self.old_stderr = os.dup(2)
+        sys.stderr.flush()
+        os.dup2(devnull, 2)
+        os.close(devnull)
+        return None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        import sys
+        import os
+        os.dup2(self.old_stderr, 2)
+        os.close(self.old_stderr)
