@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from signals.fourier import fourier
 from signals.analysis import ClimbingAgent
 from audio.audio import play, record, read, write
-from scipy import stats
+
 
 def main():
     rate = 44100
@@ -13,51 +13,53 @@ def main():
         rain = analyze(length, rate, signal)
         print(rain)
 
+
 def main2():
     rate = 44100
     length = 5
     signal = record(rate, length)
     xf, yf = fourier(signal, rate)
-    agents = find_peaks(length, yf)
+    agents = find_peaks(yf, length, 0.1, 0.005)
     plot(signal, rate, length, xf, yf, agents)
 
 
 def main3():
     from scipy.io import wavfile
-    start = 60 * 0
+    start = 60 * 0 + 0
     end = start + 5
-    delta = end - start  # Also is equal to the number of samples between integral frequency values
+    delta = end - start  # Also is equal to the number of samples between integral values of frequency
     rate, signal = wavfile.read('Mon28Mar16.wav')
     signal = signal[start * rate:end * rate, 0] / (2. ** 15)  # Left stereo
     rain = analyze(delta, rate, signal)
     print(rain)
 
 
-def analyze(delta, rate, signal):
+def analyze(length, rate, signal):
     xf, yf = fourier(signal, rate)
-    xf = xf[:delta * 17000]
-    yf = yf[:delta * 17000]
+    # xf = xf[:length * 5000]
+    # yf = yf[:length * 5000]
     # yf = np.log10(yf)
-    agent_delta = delta * 100  # 10Hz
-    agents = [ClimbingAgent(yf, i, agent_delta, 0., True) for i in range(agent_delta, len(yf), agent_delta * 2 + 1)]
-    agents = list(filter(lambda a: a.climb().is_on_peak, agents))
-    xa = np.array([a.position / delta for a in agents])
-    ya = np.array([a.value for a in agents])
-    # print(len(agents))
-    # print(list(zip(xa, ya)))
-    slope, intercept, r_value, p_value, std_err = stats.linregress(xa, np.sqrt(1. / ya))
-    # xr = np.arange(17000)
-    # yr = xr * slope + intercept
-    # yr = 1. / (yr ** 2)
-    # print(slope, intercept, r_value, p_value, std_err)
+    agents_signal = find_peaks(signal, rate, 100, 0.01)
+    xa_signal = np.array([a.position / rate for a in agents_signal])
+    ya_signal = np.array([a.value for a in agents_signal])
+
     # plt.subplot(2, 1, 1)
     # plt.plot(np.arange(len(signal)) / rate, signal)
+    # plt.plot(xa_signal, ya_signal, 'r*')
+
+    agents_spectrum = find_peaks(yf, length, 0.1, 0.0001)
+    xa_spectrum = np.array([a.position / length for a in agents_spectrum])
+    ya_spectrum = np.array([a.value for a in agents_spectrum])
+
     # plt.subplot(2, 1, 2)
     # plt.plot(xf, yf)
-    # plt.plot(xa, ya, 'r*')
-    # plt.plot(xr, yr, 'g')
+    # plt.plot(xa_spectrum, ya_spectrum, 'r*')
+
     # plt.show()
-    rain = (r_value - 0.8) / 0.2 if r_value > 0.8 else 0.0
+
+    area = np.trapz(ya_spectrum, xa_spectrum)
+    print(area)
+    rain = np.average(ya_signal)
     return rain
 
 
@@ -70,15 +72,28 @@ def plot(signal, rate, delta, xf, yf, agents):
     plt.show()
 
 
-def find_peaks(length, yf):
-    agent_delta = length * 10  # 10Hz
-    agents = [ClimbingAgent(yf, i, agent_delta, 0.005, True) for i in range(agent_delta, len(yf), agent_delta * 2 + 1)]
+def find_peaks(world, rate, delta, height):
+    """
+    Find peaks in a samples list using ClimbingAgents.
+
+    :param world:Samples
+    :type world:list
+    :param rate:Amount of samples per unit
+    :type rate:int
+    :param delta:Amount of agents per unit
+    :type delta:float
+    :param height:Minimum height
+    :type height:float
+    :return:A list with the ClimbingAgents
+    :rtype:list
+    """
+
+    agent_delta = int(rate / delta)
+    agents = [ClimbingAgent(world, i, agent_delta, height, True) for i in
+              range(agent_delta, len(world), agent_delta * 2 + 1)]
     agents = list(filter(lambda a: a.climb().is_on_peak, agents))
-    # print(len(agents))
-    # print([a.position / length for a in agents])
-    # print([a.value for a in agents])
     return agents
 
 
 if __name__ == "__main__":
-    main()
+    main3()
