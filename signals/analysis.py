@@ -44,3 +44,53 @@ class ClimbingAgent(object):
     @property
     def is_on_peak(self):
         return self.is_alive and not self.can_move
+
+
+def find_peaks(world, rate, delta, height):
+    """
+    Find peaks in a list of samples using ClimbingAgents.
+
+    :param world:Samples
+    :type world:list
+    :param rate:Amount of samples per unit
+    :type rate:int
+    :param delta:Amount of agents per unit
+    :type delta:float
+    :param height:Minimum height
+    :type height:float
+    :return:A list with the ClimbingAgents on peaks
+    :rtype:list
+    """
+
+    agent_delta = int(rate / delta)
+    agents = [ClimbingAgent(world, i, agent_delta, height, True) for i in
+              range(agent_delta, len(world), agent_delta * 2 + 1)]
+    agents = list(filter(lambda a: a.climb().is_on_peak, agents))
+    return agents
+
+
+def climb(world, rate, delta, height, n=1):
+    """
+    Apply n climbs to ClimbingAgents.
+
+    :param world:Samples
+    :type world:list
+    :param rate:Amount of samples per unit
+    :type rate:int
+    :param delta:Amount of agents per unit
+    :type delta:float
+    :param height:Minimum height
+    :type height:float
+    :param n:Times to climb
+    :type n:int
+    :return:A list with the ClimbingAgents on peaks
+    :rtype:list
+    """
+
+    agent_delta = int(rate / delta)
+    agents = [ClimbingAgent(world, i, agent_delta, height, True) for i in
+              range(agent_delta, len(world), agent_delta * 2 + 1)]
+    for _ in range(n):
+        for a in agents:
+            a.climb()
+    return agents
