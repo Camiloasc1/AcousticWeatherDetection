@@ -18,26 +18,26 @@ def main2():
     rate = 44100
     length = 5
     signal = record(rate, length)
-    xf, yf = fourier(signal, rate)
-    agents = find_peaks(yf, length, 0.1, 0.005)
-    plot(signal, rate, length, xf, yf, agents)
+    rain = analyze(length, rate, signal)
+    print(rain)
 
 
 def main3():
     from scipy.io import wavfile
-    start = 60 * 0 + 0
+    start = 60 * 0 + 30
     end = start + 5
     delta = end - start  # Also is equal to the number of samples between integral values of frequency
     rate, signal = wavfile.read('Mon28Mar16.wav')
     signal = signal[start * rate:end * rate, 0] / (2. ** 15)  # Left stereo
     rain = analyze(delta, rate, signal)
     print(rain)
+    # play(signal, rate)
 
 
 def analyze(length, rate, signal):
     xf, yf = fourier(signal, rate)
-    # xf = xf[:length * 5000]
-    # yf = yf[:length * 5000]
+    xf = xf[:length * 5000]
+    yf = yf[:length * 5000]
     # yf = np.log10(yf)
     agents_signal = find_peaks(signal, rate, 100, 0.01)
     xa_signal = np.array([a.position / rate for a in agents_signal])
@@ -58,8 +58,14 @@ def analyze(length, rate, signal):
     # plt.show()
 
     area = np.trapz(ya_spectrum, xa_spectrum)
-    print(area)
-    rain = np.average(ya_signal)
+    # area /= 32.
+    avg = np.average(ya_signal)
+    var = np.var(ya_signal)
+    std = np.std(ya_signal)
+    area_factor = (1 - (48. - area) / 48.)
+    volume_factor = avg - std
+    print(volume_factor, area_factor)
+    rain = np.sqrt(volume_factor * area_factor)
     return rain
 
 
@@ -96,4 +102,4 @@ def find_peaks(world, rate, delta, height):
 
 
 if __name__ == "__main__":
-    main3()
+    main()
