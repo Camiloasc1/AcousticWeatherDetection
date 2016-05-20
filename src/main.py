@@ -1,17 +1,96 @@
 import numpy as np
-
+import time
+from threading import Thread
 from audio.audio import record
 from signals.analysis import find_peaks, climb
 from signals.fourier import fourier
 
+import gi
+
+RUN = True
+RATE = 44100
+LENGTH = 5
+SLEEP = 10
+PATH = '../img/'
+SIZE = 2
+
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, GdkPixbuf
+
+
+class Handler:
+    def __init__(self, gui):
+        self.gui = gui
+
+    def onButtonPressed(self, button):
+        print("Hello World!")
+
+
+class GUI:
+    def __init__(self, file):
+        self.width = 256 * SIZE
+        self.height = 160 * SIZE
+
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file(file)
+        self.builder.connect_signals(Handler(self))
+
+        self.window = self.builder.get_object("MainWindow")
+        self.window.connect("destroy", Gtk.main_quit)
+        self.window.show_all()
+
+        self.image = self.builder.get_object("Image")
+        self.record = self.builder.get_object("Record")
+        self.spinner = self.builder.get_object("Spinner")
+        self.scale = self.builder.get_object("Scale")
+        self.adjustment = self.builder.get_object("Adjustment")
+
+        self.clear = GdkPixbuf.Pixbuf.new_from_file_at_size(PATH + 'weather-clear.jpg', self.width, self.height)
+        self.soft = GdkPixbuf.Pixbuf.new_from_file_at_size(PATH + 'weather-showers.jpg', self.width, self.height)
+        self.hard = GdkPixbuf.Pixbuf.new_from_file_at_size(PATH + 'weather-overcast.jpg', self.width, self.height)
+        self.storm = GdkPixbuf.Pixbuf.new_from_file_at_size(PATH + 'weather-storm.jpg', self.width, self.height)
+        self.set_rain(0.)
+
+    def set_rain(self, rain):
+        self.adjustment.set_value(rain)
+        if rain < 0.25:
+            self.image.set_from_pixbuf(self.clear)
+        elif rain < 0.50:
+            self.image.set_from_pixbuf(self.soft)
+        elif rain < 0.75:
+            self.image.set_from_pixbuf(self.hard)
+        else:
+            self.image.set_from_pixbuf(self.storm)
+
+    def start_record(self):
+        self.spinner.start()
+        self.record.set_active(True)
+
+    def stop_record(self):
+        self.spinner.stop()
+        self.record.set_active(False)
+
 
 def main():
-    rate = 44100
-    length = 5
-    while True:
-        signal = record(rate, length)
-        rain = analyze(length, rate, signal)
+    global RUN
+    gui = GUI("GUI.glade")
+    t = Thread(target=record_loop, args=(gui,))
+    t.start()
+    Gtk.main()
+    RUN = False
+    t.join()
+
+
+def record_loop(gui):
+    while RUN:
+        gui.start_record()
+        signal = record(RATE, LENGTH)
+        rain = analyze(LENGTH, RATE, signal)
+        gui.set_rain(rain)
+        gui.stop_record()
         print(rain)
+
+        time.sleep(SLEEP)
 
 
 def analyze(length, rate, signal):
